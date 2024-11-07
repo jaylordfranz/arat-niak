@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arat Niak</title>
+    <link rel="icon" href="images/icon.png" type="image/png">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Hide quantity control buttons when printing */
+        @media print {
+            .quantity-control {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container my-5">
+        <h1 class="text-center">Your Cart</h1>
+        
+        <!-- Printable Receipt Content -->
+        <div id="printable-receipt">
+            <table class="table mt-4">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Quantity</th>
+                        <th>Price (₱)</th>
+                        <th>Subtotal (₱)</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="cart-items">
+                    <!-- Cart items will be dynamically loaded here -->
+                </tbody>
+            </table>
+            <div class="text-right">
+                <p id="subtotal">Total: ₱0.00</p>
+            </div>
+        </div>
+
+        <!-- Generate PDF Button (excluded from PDF) -->
+        <button id="generate-pdf" class="btn btn-success">Generate PDF Receipt</button>
+        <button class="btn btn-success" onclick="window.location.href='index.html'">Home</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js"></script>
+    <script>
+        function loadCart() {
+            const cart = JSON.parse(localStorage.getItem("cart")) || [];
+            const cartItemsContainer = document.getElementById("cart-items");
+            let subtotal = 0;
+
+            cartItemsContainer.innerHTML = ""; // Clear previous content
+
+            cart.forEach((item, index) => {
+                const itemSubtotal = item.price * item.quantity;
+                subtotal += itemSubtotal;
+
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${item.name}</td>
+                    <td>
+                        <button onclick="updateQuantity(${index}, -1)" class="btn btn-sm btn-danger quantity-control">-</button>
+                        <span>${item.quantity}</span>
+                        <button onclick="updateQuantity(${index}, 1)" class="btn btn-sm btn-success quantity-control">+</button>
+                    </td>
+                    <td>₱${item.price}</td>
+                    <td>₱${itemSubtotal.toFixed(2)}</td>
+                    <td><button onclick="removeItem(${index})" class="btn btn-sm btn-danger">Remove</button></td>
+                `;
+                cartItemsContainer.appendChild(row);
+            });
+
+            document.getElementById("subtotal").innerText = `Total: ₱${subtotal.toFixed(2)}`;
+        }
+
+        function updateQuantity(index, change) {
+            const cart = JSON.parse(localStorage.getItem("cart")) || [];
+            cart[index].quantity += change;
+
+            // Prevent quantity from going below 1
+            if (cart[index].quantity < 1) {
+                cart[index].quantity = 1;
+            }
+
+            // Save updated cart and reload display
+            localStorage.setItem("cart", JSON.stringify(cart));
+            loadCart();
+        }
+
+        function removeItem(index) {
+            const cart = JSON.parse(localStorage.getItem("cart")) || [];
+            cart.splice(index, 1); // Remove the item from the cart array
+
+            // Save updated cart and reload display
+            localStorage.setItem("cart", JSON.stringify(cart));
+            loadCart();
+        }
+
+        // Generate PDF Receipt for Printable Receipt Section
+        document.getElementById("generate-pdf").addEventListener("click", () => {
+            const element = document.getElementById("printable-receipt");
+            html2pdf().from(element).save("receipt.pdf");
+        });
+
+        window.onload = loadCart;
+    </script>
+</body>
+</html>
